@@ -14,6 +14,10 @@ pub struct SpawnOnStartup {
 }
 
 impl SpawnOnStartup {
+    /// Create a new startup hook to use with the compose function.
+    pub fn new(prog: impl Into<Cow<'static, str>>) -> Self {
+        Self { prog: prog.into() }
+    }
     /// Create a new startup hook ready for adding to your Config
     pub fn boxed<X>(prog: impl Into<Cow<'static, str>>) -> Box<dyn StateHook<X>>
     where
