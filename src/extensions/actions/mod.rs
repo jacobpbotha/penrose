@@ -156,3 +156,38 @@ where
         })
     })
 }
+
+/// Pull a workspace with a a client with the given class as `WM_CLASS` to the current screen or
+/// spawn the program with the given command if no such client exists.
+///
+/// This is useful for key bindings that are based on the program you want to work with rather than
+/// having to remember where things are running.
+pub fn pull_or_spawn<X>(class: &'static str, command: &'static str) -> Box<dyn KeyEventHandler<X>>
+where
+    X: XConn,
+{
+    key_handler(move |s: &mut State<X>, x: &X| {
+        let mut client = None;
+
+        for &id in s.client_set.clients() {
+            if let Some(Prop::UTF8String(classes)) = x.get_prop(id, Atom::WmClass.as_ref())? {
+                if classes.iter().any(|s| s == class) {
+                    client = Some(id);
+                    break;
+                }
+            }
+        }
+
+        x.modify_and_refresh(s, |cs| {
+            if let Some(id) = client {
+                let tag = cs.tag_for_client(&id);
+                if let Some(tag) = tag {
+                    let tag = tag.to_string();
+                    cs.pull_tag_to_screen(&tag)
+                }
+            } else if let Err(e) = spawn(command) {
+                error!(%e, %command, "unable to spawn program")
+            }
+        })
+    })
+}
