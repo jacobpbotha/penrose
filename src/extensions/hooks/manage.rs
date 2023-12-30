@@ -123,3 +123,13 @@ impl<X: XConn> ManageHook<X> for SetWorkspace {
         Ok(())
     }
 }
+
+/// Move the focus to the named workspace.
+#[derive(Debug)]
+pub struct PullWorkspace(pub &'static str);
+impl<X: XConn> ManageHook<X> for PullWorkspace {
+    fn call(&mut self, _client: Xid, state: &mut State<X>, _: &X) -> Result<()> {
+        state.client_set.pull_tag_to_screen(self.0);
+        Ok(())
+    }
+}
