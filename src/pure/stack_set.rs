@@ -52,6 +52,7 @@ where
             .collect();
 
         let mut screen_details: Vec<Rect> = screen_details.into_iter().collect();
+        // TODO Integrate this properly.
         screen_details.sort_by(|Rect { x: x1, .. }, Rect { x: x2, .. }| x1.cmp(x2));
 
         Self::try_new_concrete(workspaces, screen_details, HashMap::new())

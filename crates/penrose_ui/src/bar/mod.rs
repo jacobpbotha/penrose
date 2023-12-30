@@ -88,7 +88,9 @@ impl<X: XConn> StatusBar<X> {
 
     fn init_for_screens(&mut self) -> Result<()> {
         info!("initialising per screen status bar windows");
-        let screen_details = self.draw.conn.screen_details()?;
+        let mut screen_details = self.draw.conn.screen_details()?;
+        // TODO integrate this properly.
+        screen_details.sort_by(|Rect { x: x1, .. }, Rect { x: x2, .. }| x1.cmp(x2));
 
         self.screens = screen_details
             .iter()
