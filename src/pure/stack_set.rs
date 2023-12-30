@@ -51,7 +51,8 @@ where
             .map(|(i, tag)| Workspace::new(i, tag, layouts.clone(), None))
             .collect();
 
-        let screen_details: Vec<Rect> = screen_details.into_iter().collect();
+        let mut screen_details: Vec<Rect> = screen_details.into_iter().collect();
+        screen_details.sort_by(|Rect { x: x1, .. }, Rect { x: x2, .. }| x1.cmp(x2));
 
         Self::try_new_concrete(workspaces, screen_details, HashMap::new())
     }
