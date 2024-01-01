@@ -4,7 +4,7 @@ use crate::{
         bindings::{KeyBindings, KeyCode, MouseBindings, MouseEvent},
         State, Xid,
     },
-    pure::geometry::{Point, Rect},
+    pure::geometry::Point,
     x::{
         atom::Atom,
         event::{ClientMessage, ClientMessageKind, ConfigureEvent, PointerChange},
@@ -166,9 +166,7 @@ pub(crate) fn leave<X: XConn>(p: PointerChange, state: &mut State<X>, x: &X) -> 
 
 pub(crate) fn detect_screens<X: XConn>(state: &mut State<X>, x: &X) -> Result<()> {
     info!("re-detecting screens");
-    let mut rects = x.screen_details()?;
-    // TODO Integrate this properly.
-    rects.sort_by(|Rect { x: x1, .. }, Rect { x: x2, .. }| x1.cmp(x2));
+    let rects = x.screen_details()?;
     info!(?rects, "found screens");
 
     state.client_set.update_screens(rects)

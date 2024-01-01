@@ -28,7 +28,7 @@ use crate::{
     },
     Error, Result, Xid,
 };
-use std::{collections::HashMap, str::FromStr};
+use std::{cmp::Ordering, collections::HashMap, str::FromStr};
 use strum::IntoEnumIterator;
 use tracing::error;
 use x11rb::{
@@ -53,6 +53,19 @@ use x11rb::xcb_ffi::XCBConnection;
 pub mod conversions;
 
 use conversions::convert_event;
+
+/// This provides a way to put the screens returned by the X server in an arbitrary order.
+/// The intended use it to set it once in your config, before any connections are made.
+///
+/// # Safety
+/// The user should guarantee that they do not modify this if there are any established connections.
+/// To avoid having two different screen orderings for differnt parts of the program.
+pub static mut SCREEN_CMP_FUNCTION: fn(&Rect, &Rect) -> Ordering = default_screen_cmp;
+
+/// The default screen cpm function, everything is equal so nothing is re-ordered.
+fn default_screen_cmp(_: &Rect, _: &Rect) -> Ordering {
+    Ordering::Equal
+}
 
 const RANDR_VER: (u32, u32) = (1, 2);
 
@@ -258,7 +271,7 @@ where
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let rects = crtcs
+        let mut rects: Vec<Rect> = crtcs
             .into_iter()
             .flat_map(|cookie| cookie.reply().ok())
             .filter(|reply| reply.width > 0)
@@ -272,6 +285,10 @@ where
             })
             .collect();
 
+        // SAFETY: Safe as long as it is not modified while there are established connections.
+        unsafe {
+            rects.sort_by(SCREEN_CMP_FUNCTION);
+        }
         Ok(rects)
     }
 
