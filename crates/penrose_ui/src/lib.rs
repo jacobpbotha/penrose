@@ -35,15 +35,18 @@
 )]
 
 use penrose::{x::XConn, Color, Xid};
-use std::ffi::NulError;
+use std::{collections::HashMap, ffi::NulError};
 
 pub mod bar;
 pub mod core;
 
 pub use crate::core::{Context, Draw, TextStyle};
-pub use bar::{Position, StatusBar};
+pub use bar::{Position, UIManager};
 
-use bar::widgets::{ActiveWindowName, CurrentLayout, RootWindowName, Workspaces};
+use bar::{
+    widgets::{ActiveWindowName, CurrentLayout, RootWindowName, Widget, Workspaces},
+    StatusBar,
+};
 
 /// Error variants from penrose_ui library.
 #[derive(thiserror::Error, Debug)]
@@ -109,37 +112,61 @@ pub fn status_bar<X: XConn>(
     highlight: impl Into<Color>,
     empty_ws: impl Into<Color>,
     position: Position,
-) -> Result<StatusBar<X>> {
+) -> Result<UIManager<X>> {
     let max_active_window_chars = 80;
     let highlight = highlight.into();
 
-    StatusBar::try_new(
+    let mut widgets: HashMap<String, Box<dyn Widget<X>>> = HashMap::new();
+    widgets.insert(
+        "workspaces".to_string(),
+        Box::new(Workspaces::new(style, highlight, empty_ws)),
+    );
+    widgets.insert(
+        "current_layout".to_string(),
+        Box::new(CurrentLayout::new(style)),
+    );
+    widgets.insert(
+        "active_window".to_string(),
+        Box::new(ActiveWindowName::new(
+            max_active_window_chars,
+            TextStyle {
+                bg: Some(highlight),
+                padding: (6, 4),
+                ..style
+            },
+            true,
+            false,
+        )),
+    );
+    widgets.insert(
+        "root_window".to_string(),
+        Box::new(RootWindowName::new(
+            TextStyle {
+                padding: (4, 2),
+                ..style
+            },
+            false,
+            true,
+        )),
+    );
+
+    let bar = StatusBar {
+        order: vec![
+            "workspaces".to_string(),
+            "current_layout".to_string(),
+            "active_window".to_string(),
+            "root_window".to_string(),
+        ],
         position,
-        height,
+        screens: (0..20).collect(),
+        h: height,
+    };
+
+    UIManager::try_new(
         style.bg.unwrap_or_else(|| 0x000000.into()),
         font,
         point_size,
-        vec![
-            Box::new(Workspaces::new(style, highlight, empty_ws)),
-            Box::new(CurrentLayout::new(style)),
-            Box::new(ActiveWindowName::new(
-                max_active_window_chars,
-                TextStyle {
-                    bg: Some(highlight),
-                    padding: (6, 4),
-                    ..style
-                },
-                true,
-                false,
-            )),
-            Box::new(RootWindowName::new(
-                TextStyle {
-                    padding: (4, 2),
-                    ..style
-                },
-                false,
-                true,
-            )),
-        ],
+        widgets,
+        vec![bar],
     )
 }
