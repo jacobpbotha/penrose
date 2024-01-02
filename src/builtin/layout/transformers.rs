@@ -142,6 +142,44 @@ impl LayoutTransformer for ReserveTop {
     }
 }
 
+/// Reserve `px` pixels at the bottom of the screen.
+///
+/// Typically used for providing space for a status bar.
+#[derive(Debug, Clone)]
+pub struct ReserveBottom {
+    /// The wrapped inner layout
+    pub layout: Box<dyn Layout>,
+    /// The number of pixels to reserve at the bottom of the screen
+    pub px: u32,
+}
+
+impl ReserveBottom {
+    /// Wrap an existing [Layout] with the given reserved area.
+    pub fn wrap(layout: Box<dyn Layout>, px: u32) -> Box<dyn Layout> {
+        Box::new(Self { layout, px })
+    }
+}
+
+impl LayoutTransformer for ReserveBottom {
+    fn transformed_name(&self) -> String {
+        self.layout.name()
+    }
+
+    fn inner_mut(&mut self) -> &mut Box<dyn Layout> {
+        &mut self.layout
+    }
+
+    fn transform_initial(&self, mut r: Rect) -> Rect {
+        if r.w == 0 || r.h == 0 {
+            return r;
+        }
+
+        r.h -= self.px;
+
+        r
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
